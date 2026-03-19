@@ -17,12 +17,6 @@ CAPSOLVER_API_KEY = "CAP-96332E07A26217212E0A4F1ECCC7C1C6953F67B38D67BFCE12383ED
 RECAPTCHA_SITE_KEY = "6Lf_DWEpAAAAAEg4rjruIXopl29ai0v9o6Vafx0A"
 WEBSITE_URL = "https://redeempins.com/"
 
-COOKIES = {
-    "_hjSessionUser_2988074": "eyJpZCI6ImI2NjM5Y2EwLWRmOWEtNWJiNC05MThhLWMwNmZjYzk0OGRkZSIsImNyZWF0ZWQiOjE3NjQ3OTg0Mjg4MjIsImV4aXN0aW5nIjp0cnVlfQ==",
-    "AdoptConsent": "N4Ig7gpgRgzglgFwgSQCIgFwgKwEMoAmUAjABzEC0pAnAMYAsF9ptAzBdQAwG0We0AzYgDZWAgOz0C9XCAA0IAG5x4CAPYAnZAUwhitYQXHYIAJgqnxBYUyimIVTtXEUBUeuNzV7BU7nHyIAiCAMoIGnAAdgDmugDCAIoAFgDSAHIAghnJ6VkA4gCuGXEZAKJpcQBqAGLRWfUNjU0AdMj1zQCaTY2BagAOCMiRACq40TCYANog0QAypawASmAAXsgAVgAKgRSRcLgA8tGoALZ9aYGmpgCy0QCeSRR9ABqlgYsI2BYhAOrCNoEUhRFgAhABSB3oimIIMCMBCMNoAGt6GDKgVAscAFqcTZ3SLrLHbBSRUwFTjPTimdZqZ6BACqeRBCAQWIoAEcQsSQBoAPoQYQpLEgtQCDqBAA24kUi2eCGuHR+YMCAAk1BlUNgwOJomlOJd6GpNgAPA4ZRbs9AKXCRDlQPoEJG8/UKPLPYaKNIrSrmPqBOIdTakDoJRYqhACEAAXQU/QQBwKCFG4ymMZAtDUkRgEEigx0WAgilmP2wIUCGazOYQlQgGngmcwxFYCgKDtwSAIGQQulMVJsnHYImGxGwGFY4gwnE4zXEpFMWJAAF8gA",
-    "AdoptVisitorId": "IwYwbAJg7ArApgJgLQKhMSAsAjBckAcADAJxRIBm2mUAhiXhArVEA===",
-}
-
 BASE_HEADERS = {
     "Accept": "*/*",
     "Accept-Language": "es-US,es-419;q=0.9,es;q=0.8,en;q=0.7",
@@ -119,7 +113,6 @@ def canjear():
             "https://redeem.hype.games/validate/account",
             data=payload_account,
             headers=BASE_HEADERS,
-            cookies=COOKIES,
             timeout=30
         )
 
@@ -141,7 +134,6 @@ def canjear():
             "https://redeem.hype.games/validate",
             data=payload_validate,
             headers=BASE_HEADERS,
-            cookies=COOKIES,
             timeout=30
         )
 
