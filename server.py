@@ -1,12 +1,37 @@
 from flask import Flask, request, jsonify
-from playwright.sync_api import sync_playwright
-import time
+import requests as req
 
 app = Flask(__name__)
 
+# ── Datos fijos del formulario ─────────────────────────────────────────────
 NOMBRE = "Alex Mendez"
 FECHA_NAC = "10/01/2001"
-NACIONALIDAD = "Bolivia (Plurinational State of)"
+NACIONALIDAD_CODE = "BO"
+COUNTRY_ID = "5"
+REDEEM_COUNTRY_ID = "5"
+COMPANY_NAME = "HypeMexico"
+REDEEM_SOURCE_TYPE_ID = "3"
+PRODUCT_ID = "2630"
+
+# ── Cookies de sesión (renovar si dejan de funcionar) ─────────────────────
+COOKIES = {
+    "_hjSessionUser_2988074": "eyJpZCI6ImI2NjM5Y2EwLWRmOWEtNWJiNC05MThhLWMwNmZjYzk0OGRkZSIsImNyZWF0ZWQiOjE3NjQ3OTg0Mjg4MjIsImV4aXN0aW5nIjp0cnVlfQ==",
+    "AdoptConsent": "N4Ig7gpgRgzglgFwgSQCIgFwgKwEMoAmUAjABzEC0pAnAMYAsF9ptAzBdQAwG0We0AzYgDZWAgOz0C9XCAA0IAG5x4CAPYAnZAUwhitYQXHYIAJgqnxBYUyimIVTtXEUBUeuNzV7BU7nHyIAiCAMoIGnAAdgDmugDCAIoAFgDSAHIAghnJ6VkA4gCuGXEZAKJpcQBqAGLRWfUNjU0AdMj1zQCaTY2BagAOCMiRACq40TCYANog0QAypawASmAAXsgAVgAKgRSRcLgA8tGoALZ9aYGmpgCy0QCeSRR9ABqlgYsI2BYhAOrCNoEUhRFgAhABSB3oimIIMCMBCMNoAGt6GDKgVAscAFqcTZ3SLrLHbBSRUwFTjPTimdZqZ6BACqeRBCAQWIoAEcQsSQBoAPoQYQpLEgtQCDqBAA24kUi2eCGuHR+YMCAAk1BlUNgwOJomlOJd6GpNgAPA4ZRbs9AKXCRDlQPoEJG8/UKPLPYaKNIrSrmPqBOIdTakDoJRYqhACEAAXQU/QQBwKCFG4ymMZAtDUkRgEEigx0WAgilmP2wIUCGazOYQlQgGngmcwxFYCgKDtwSAIGQQulMVJsnHYImGxGwGFY4gwnE4zXEpFMWJAAF8gA",
+    "AdoptVisitorId": "IwYwbAJg7ArApgJgLQKhMSAsAjBckAcADAJxRIBm2mUAhiXhArVEA===",
+}
+
+HEADERS = {
+    "Accept": "*/*",
+    "Accept-Language": "es-US,es-419;q=0.9,es;q=0.8,en;q=0.7",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Origin": "https://redeem.hype.games",
+    "Referer": "https://redeem.hype.games/widget/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": "Mozilla/5.0 (Linux; Android 13; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36",
+}
+
 
 @app.route("/canjear", methods=["POST"])
 def canjear():
@@ -17,98 +42,61 @@ def canjear():
     if not pin or not cliente_id:
         return jsonify({"exito": False, "mensaje": "Faltan datos: pin o cliente_id"})
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-dev-shm-usage",
-                "--disable-web-security",
-                "--disable-features=IsolateOrigins,site-per-process",
-            ]
+    try:
+        # ── PASO 1: Verificar cuenta ──────────────────────────────────────
+        payload_account = {
+            "QueryString": "",
+            "RedeemCountryId": REDEEM_COUNTRY_ID,
+            "ProductId": PRODUCT_ID,
+            "CountryId": COUNTRY_ID,
+            "CompanyName": COMPANY_NAME,
+            "Key": pin,
+            "CookieCardHypeInfo": "",
+            "Customer.Name": NOMBRE,
+            "Customer.BornAt": FECHA_NAC,
+            "Customer.NationalityAlphaCode": NACIONALIDAD_CODE,
+            "Customer.CountryId": COUNTRY_ID,
+            "RedeemSourceTypeId": REDEEM_SOURCE_TYPE_ID,
+            "Customer.CompanyName": COMPANY_NAME,
+            "GameAccountId": str(cliente_id),
+            "privacy": "on",
+            "CaptchaToken": "",
+        }
+
+        resp_account = req.post(
+            "https://redeem.hype.games/validate/account",
+            data=payload_account,
+            headers=HEADERS,
+            cookies=COOKIES,
+            timeout=30
         )
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 720},
-            locale="es-ES",
+
+        if resp_account.status_code != 200:
+            return jsonify({"exito": False, "mensaje": f"Error en validate/account: {resp_account.status_code}"})
+
+        # ── PASO 2: Canjear el PIN ────────────────────────────────────────
+        payload_validate = {
+            "Key": pin,
+            "CaptchaToken": "",
+        }
+
+        resp_validate = req.post(
+            "https://redeem.hype.games/validate",
+            data=payload_validate,
+            headers=HEADERS,
+            cookies=COOKIES,
+            timeout=30
         )
-        page = context.new_page()
 
-        # Ocultar que es un bot
-        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        contenido = resp_validate.text.lower()
 
-        try:
-            # ── PASO 1: Ir a la web e ingresar el PIN ──────────────────────
-            page.goto("https://redeempins.com/", timeout=60000)
-            page.wait_for_load_state("networkidle")
-            time.sleep(3)
+        if resp_validate.status_code == 200 and ("exitoso" in contenido or "success" in contenido or "proceso terminado" in contenido):
+            return jsonify({"exito": True, "mensaje": "Canje exitoso - diamantes entregados"})
+        else:
+            return jsonify({"exito": False, "mensaje": f"Error en canje: {resp_validate.text[:200]}"})
 
-            # Escribir el PIN
-            page.locator("input").first.fill(pin)
-            time.sleep(1)
-
-            # Clic en "Canjear"
-            page.locator("button:has-text('Canjear')").first.click()
-            time.sleep(5)
-
-            # ── PASO 2: Rellenar el formulario ────────────────────────────
-            # Nombre completo
-            try:
-                page.get_by_placeholder("Nombre Completo").fill(NOMBRE)
-            except:
-                page.locator("input").nth(0).fill(NOMBRE)
-            time.sleep(1)
-
-            # Fecha de nacimiento
-            try:
-                page.get_by_placeholder("Fecha de Nacimiento").fill(FECHA_NAC)
-            except:
-                page.locator("input").nth(1).fill(FECHA_NAC)
-            time.sleep(1)
-
-            # Nacionalidad
-            page.locator("select").first.select_option(label=NACIONALIDAD)
-            time.sleep(1)
-
-            # ID del cliente
-            try:
-                page.get_by_placeholder("ID de usuario en el juego").fill(str(cliente_id))
-            except:
-                page.locator("input").nth(2).fill(str(cliente_id))
-            time.sleep(1)
-
-            # Checkbox términos
-            checkbox = page.locator("input[type='checkbox']").first
-            if not checkbox.is_checked():
-                checkbox.click()
-            time.sleep(1)
-
-            # Clic en "Verificar ID"
-            page.locator("button:has-text('Verificar ID')").first.click()
-            time.sleep(5)
-
-            # ── PASO 3: Clic en "Canjear Ahora" ──────────────────────────
-            page.locator("button:has-text('Canjear Ahora')").first.click()
-            time.sleep(5)
-
-            # ── PASO 4: Verificar resultado ───────────────────────────────
-            contenido = page.content().lower()
-
-            if "proceso terminado" in contenido or "exitoso" in contenido or "success" in contenido:
-                return jsonify({"exito": True, "mensaje": "Canje exitoso - diamantes entregados"})
-            elif "error" in contenido or "invalido" in contenido or "invalid" in contenido:
-                return jsonify({"exito": False, "mensaje": "PIN invalido o error en el canje"})
-            else:
-                page.screenshot(path="/tmp/resultado.png")
-                return jsonify({"exito": False, "mensaje": "Resultado desconocido - revisar manualmente"})
-
-        except Exception as e:
-            return jsonify({"exito": False, "mensaje": f"Error tecnico: {str(e)}"})
-
-        finally:
-            context.close()
-            browser.close()
+    except Exception as e:
+        return jsonify({"exito": False, "mensaje": f"Error tecnico: {str(e)}"})
 
 
 @app.route("/ping", methods=["GET"])
