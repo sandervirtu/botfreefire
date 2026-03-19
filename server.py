@@ -15,7 +15,7 @@ PRODUCT_ID = "2630"
 
 CAPSOLVER_API_KEY = "CAP-96332E07A26217212E0A4F1ECCC7C1C6953F67B38D67BFCE12383ED9D3D49262"
 RECAPTCHA_SITE_KEY = "6Lf_DWEpAAAAAEg4rjruIXopl29ai0v9o6Vafx0A"
-WEBSITE_URL = "https://redeempins.com/"
+WEBSITE_URL = "https://redeem.hype.games/widget/"
 
 BASE_HEADERS = {
     "Accept": "*/*",
@@ -35,7 +35,7 @@ def obtener_captcha_token():
                 "type": "ReCaptchaV3TaskProxyLess",
                 "websiteURL": WEBSITE_URL,
                 "websiteKey": RECAPTCHA_SITE_KEY,
-                "pageAction": "verify"
+                "pageAction": "submit"
             }
         }
 
