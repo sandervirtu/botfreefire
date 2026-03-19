@@ -27,43 +27,53 @@ def canjear():
             page.goto("https://redeempins.com/", timeout=30000)
             page.wait_for_load_state("networkidle")
 
-            # Escribir el PIN en el campo "Código Pin"
-            page.fill("input[placeholder='Código Pin'], input[type='text']", pin)
+            # Escribir el PIN en el primer input disponible
+            page.locator("input").first.fill(pin)
+            time.sleep(1)
 
             # Clic en el botón "Canjear"
-            page.click("button:has-text('Canjear')")
-            page.wait_for_load_state("networkidle")
-            time.sleep(2)
+            page.locator("button:has-text('Canjear')").first.click()
+            time.sleep(4)
 
             # ── PASO 2: Rellenar el formulario de datos ────────────────────
-            # Nombre completo (siempre Alex Mendez)
-            page.fill("input[placeholder='Nombre Completo'], input[name='name']", NOMBRE)
+            # Nombre completo
+            try:
+                page.get_by_placeholder("Nombre Completo").fill(NOMBRE)
+            except:
+                page.locator("input").nth(0).fill(NOMBRE)
+            time.sleep(1)
 
             # Fecha de nacimiento
-            page.fill("input[placeholder='Fecha de Nacimiento'], input[name='birthday']", FECHA_NAC)
+            try:
+                page.get_by_placeholder("Fecha de Nacimiento").fill(FECHA_NAC)
+            except:
+                page.locator("input").nth(1).fill(FECHA_NAC)
+            time.sleep(1)
 
             # Seleccionar nacionalidad en el dropdown
-            page.select_option("select", label=NACIONALIDAD)
+            page.locator("select").first.select_option(label=NACIONALIDAD)
+            time.sleep(1)
 
-            # ID del cliente (este es el dato dinámico que viene del bot)
-            page.fill("input[placeholder='ID de usuario en el juego'], input[name='player_id']", str(cliente_id))
+            # ID del cliente
+            try:
+                page.get_by_placeholder("ID de usuario en el juego").fill(str(cliente_id))
+            except:
+                page.locator("input").nth(2).fill(str(cliente_id))
+            time.sleep(1)
 
             # Marcar el checkbox de términos y condiciones
-            checkbox = page.locator("input[type='checkbox']")
+            checkbox = page.locator("input[type='checkbox']").first
             if not checkbox.is_checked():
                 checkbox.click()
-
             time.sleep(1)
 
             # Clic en "Verificar ID"
-            page.click("button:has-text('Verificar ID')")
-            page.wait_for_load_state("networkidle")
-            time.sleep(3)
+            page.locator("button:has-text('Verificar ID')").first.click()
+            time.sleep(4)
 
             # ── PASO 3: Clic en "¡Canjear Ahora!" ────────────────────────
-            page.click("button:has-text('Canjear Ahora')")
-            page.wait_for_load_state("networkidle")
-            time.sleep(3)
+            page.locator("button:has-text('Canjear Ahora')").first.click()
+            time.sleep(4)
 
             # ── PASO 4: Verificar resultado ───────────────────────────────
             contenido = page.content().lower()
