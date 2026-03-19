@@ -4,7 +4,6 @@ import time
 
 app = Flask(__name__)
 
-# Datos fijos para el formulario (siempre los mismos)
 NOMBRE = "Alex Mendez"
 FECHA_NAC = "10/01/2001"
 NACIONALIDAD = "Bolivia (Plurinational State of)"
@@ -19,23 +18,41 @@ def canjear():
         return jsonify({"exito": False, "mensaje": "Faltan datos: pin o cliente_id"})
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-dev-shm-usage",
+                "--disable-web-security",
+                "--disable-features=IsolateOrigins,site-per-process",
+            ]
+        )
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 720},
+            locale="es-ES",
+        )
+        page = context.new_page()
+
+        # Ocultar que es un bot
+        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
         try:
             # ── PASO 1: Ir a la web e ingresar el PIN ──────────────────────
-            page.goto("https://redeempins.com/", timeout=30000)
+            page.goto("https://redeempins.com/", timeout=60000)
             page.wait_for_load_state("networkidle")
+            time.sleep(3)
 
-            # Escribir el PIN en el primer input disponible
+            # Escribir el PIN
             page.locator("input").first.fill(pin)
             time.sleep(1)
 
-            # Clic en el botón "Canjear"
+            # Clic en "Canjear"
             page.locator("button:has-text('Canjear')").first.click()
-            time.sleep(4)
+            time.sleep(5)
 
-            # ── PASO 2: Rellenar el formulario de datos ────────────────────
+            # ── PASO 2: Rellenar el formulario ────────────────────────────
             # Nombre completo
             try:
                 page.get_by_placeholder("Nombre Completo").fill(NOMBRE)
@@ -50,7 +67,7 @@ def canjear():
                 page.locator("input").nth(1).fill(FECHA_NAC)
             time.sleep(1)
 
-            # Seleccionar nacionalidad en el dropdown
+            # Nacionalidad
             page.locator("select").first.select_option(label=NACIONALIDAD)
             time.sleep(1)
 
@@ -61,7 +78,7 @@ def canjear():
                 page.locator("input").nth(2).fill(str(cliente_id))
             time.sleep(1)
 
-            # Marcar el checkbox de términos y condiciones
+            # Checkbox términos
             checkbox = page.locator("input[type='checkbox']").first
             if not checkbox.is_checked():
                 checkbox.click()
@@ -69,11 +86,11 @@ def canjear():
 
             # Clic en "Verificar ID"
             page.locator("button:has-text('Verificar ID')").first.click()
-            time.sleep(4)
+            time.sleep(5)
 
-            # ── PASO 3: Clic en "¡Canjear Ahora!" ────────────────────────
+            # ── PASO 3: Clic en "Canjear Ahora" ──────────────────────────
             page.locator("button:has-text('Canjear Ahora')").first.click()
-            time.sleep(4)
+            time.sleep(5)
 
             # ── PASO 4: Verificar resultado ───────────────────────────────
             contenido = page.content().lower()
@@ -81,22 +98,21 @@ def canjear():
             if "proceso terminado" in contenido or "exitoso" in contenido or "success" in contenido:
                 return jsonify({"exito": True, "mensaje": "Canje exitoso - diamantes entregados"})
             elif "error" in contenido or "invalido" in contenido or "invalid" in contenido:
-                return jsonify({"exito": False, "mensaje": "PIN inválido o error en el canje"})
+                return jsonify({"exito": False, "mensaje": "PIN invalido o error en el canje"})
             else:
-                # Capturar screenshot para debug si hay duda
                 page.screenshot(path="/tmp/resultado.png")
                 return jsonify({"exito": False, "mensaje": "Resultado desconocido - revisar manualmente"})
 
         except Exception as e:
-            return jsonify({"exito": False, "mensaje": f"Error técnico: {str(e)}"})
+            return jsonify({"exito": False, "mensaje": f"Error tecnico: {str(e)}"})
 
         finally:
+            context.close()
             browser.close()
 
 
 @app.route("/ping", methods=["GET"])
 def ping():
-    # Endpoint para verificar que el servidor está vivo
     return jsonify({"status": "ok"})
 
 
