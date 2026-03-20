@@ -1,4 +1,3 @@
-cat > server.py << 'EOF'
 from flask import Flask, request, jsonify
 import requests as req
 import time
@@ -137,4 +136,3 @@ def ping():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
-EOF
