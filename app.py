@@ -14,13 +14,11 @@ def procesar_canje(telefono, datos):
             f"🎮 ID: {datos['id']}\n"
             f"Espera unos segundos..."
         )
-
         resultado = ejecutar_bot(
             pin=datos["pin"],
             user_id=datos["id"],
             diamantes_esperados=datos["diamantes"]
         )
-
         if resultado["exitoso"]:
             enviar_mensaje(telefono,
                 f"✅ *¡Recarga exitosa!*\n"
@@ -34,7 +32,6 @@ def procesar_canje(telefono, datos):
                 f"Motivo: {resultado['error']}\n"
                 f"Contacta al soporte."
             )
-
     except Exception as e:
         enviar_mensaje(telefono, f"❌ Error inesperado: {str(e)}")
 
@@ -42,22 +39,49 @@ def procesar_canje(telefono, datos):
 def webhook():
     try:
         data = request.json
-        print(f"📨 Webhook: {data}")
+        print(f"📨 Webhook recibido: {data}")
 
-        # Estructura del webhook de WuzAPI
+        # Estructura real de WuzAPI
         tipo = data.get("type", "")
-        if tipo not in ["message", "msg"]:
+        evento = data.get("event", {})
+
+        print(f"📌 Tipo de evento: {tipo}")
+
+        # Solo procesar mensajes de texto
+        if tipo != "Message":
+            print(f"⏭️ Ignorando evento tipo: {tipo}")
             return jsonify({"status": "ignorado"}), 200
 
-        texto    = data.get("Body", "") or data.get("body", "")
-        telefono = data.get("From", "") or data.get("from", "")
-        telefono = telefono.replace("@s.whatsapp.net", "").replace("@c.us", "")
+        # Extraer texto y teléfono
+        info = evento.get("Info", {})
+        mensaje_data = evento.get("Text", "") or evento.get("Message", "")
+        
+        # El remitente
+        sender = info.get("Sender", "") or evento.get("Sender", "")
+        telefono = sender.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "")
+
+        # Ignorar mensajes propios
+        es_mio = info.get("IsFromMe", False)
+        if es_mio:
+            print("⏭️ Ignorando mensaje propio")
+            return jsonify({"status": "ignorado"}), 200
+
+        # Ignorar grupos
+        es_grupo = info.get("IsGroup", False)
+        if es_grupo:
+            print("⏭️ Ignorando mensaje de grupo")
+            return jsonify({"status": "ignorado"}), 200
+
+        texto = mensaje_data
+        if not texto:
+            texto = evento.get("Body", "") or evento.get("body", "")
+
+        print(f"📱 Mensaje de {telefono}: {texto}")
 
         if not texto or not telefono:
             return jsonify({"status": "sin datos"}), 200
 
-        print(f"📱 De {telefono}: {texto}")
-
+        # Parsear el mensaje
         datos = parsear_mensaje(texto)
 
         if not datos["valido"]:
