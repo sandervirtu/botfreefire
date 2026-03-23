@@ -35,30 +35,45 @@ def procesar_canje(telefono, datos):
     except Exception as e:
         enviar_mensaje(telefono, f"❌ Error inesperado: {str(e)}")
 
+def extraer_telefono(evento, info):
+    """Extrae el número de teléfono real incluso con @lid"""
+    # Intentar obtener número real del chat
+    chat = evento.get("Chat", "") or info.get("Chat", "")
+    sender = info.get("Sender", "") or evento.get("Sender", "")
+    
+    # Si el chat tiene número real (s.whatsapp.net) usarlo
+    if "@s.whatsapp.net" in chat:
+        return chat.replace("@s.whatsapp.net", "")
+    
+    # Si el sender tiene número real usarlo
+    if "@s.whatsapp.net" in sender:
+        return sender.replace("@s.whatsapp.net", "")
+    
+    # Si solo hay @lid usar el chat igual
+    if "@lid" in chat:
+        return chat  # WuzAPI puede manejar @lid para responder
+    
+    if "@lid" in sender:
+        return sender
+    
+    return chat or sender
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
         data = request.json
         print(f"📨 Webhook recibido: {data}")
 
-        # Estructura real de WuzAPI
         tipo = data.get("type", "")
         evento = data.get("event", {})
 
         print(f"📌 Tipo de evento: {tipo}")
 
-        # Solo procesar mensajes de texto
         if tipo != "Message":
             print(f"⏭️ Ignorando evento tipo: {tipo}")
             return jsonify({"status": "ignorado"}), 200
 
-        # Extraer texto y teléfono
         info = evento.get("Info", {})
-        mensaje_data = evento.get("Text", "") or evento.get("Message", "")
-        
-        # El remitente
-        sender = info.get("Sender", "") or evento.get("Sender", "")
-        telefono = sender.replace("@s.whatsapp.net", "").replace("@lid", "").replace("@c.us", "")
 
         # Ignorar mensajes propios
         es_mio = info.get("IsFromMe", False)
@@ -72,16 +87,24 @@ def webhook():
             print("⏭️ Ignorando mensaje de grupo")
             return jsonify({"status": "ignorado"}), 200
 
-        texto = mensaje_data
-        if not texto:
-            texto = evento.get("Body", "") or evento.get("body", "")
+        # Extraer teléfono
+        telefono = extraer_telefono(evento, info)
 
-        print(f"📱 Mensaje de {telefono}: {texto}")
+        # Extraer texto del mensaje
+        texto = (
+            evento.get("Text", "") or
+            evento.get("Message", "") or
+            info.get("Text", "") or
+            data.get("Body", "") or
+            data.get("body", "")
+        )
+
+        print(f"📱 De {telefono}: {texto}")
 
         if not texto or not telefono:
+            print("⚠️ Sin texto o teléfono")
             return jsonify({"status": "sin datos"}), 200
 
-        # Parsear el mensaje
         datos = parsear_mensaje(texto)
 
         if not datos["valido"]:
