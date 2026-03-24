@@ -90,15 +90,33 @@ def webhook():
         # Extraer teléfono
         telefono = extraer_telefono(evento, info)
 
-        # Extraer texto del mensaje
-        texto = (
-            evento.get("Text", "") or
-            evento.get("Message", "") or
-            info.get("Text", "") or
-            data.get("Body", "") or
-            data.get("body", "")
-        )
-
+        # Extraer texto del mensaje - estructura real de WuzAPI
+        mensaje_obj = evento.get("Message", {})
+        texto = ""
+        
+        if isinstance(mensaje_obj, dict):
+            # Mensaje simple
+            if mensaje_obj.get("conversation"):
+                texto = mensaje_obj["conversation"]
+            # Mensaje extendido (links, texto largo)
+            elif mensaje_obj.get("extendedTextMessage"):
+                ext = mensaje_obj["extendedTextMessage"]
+                if isinstance(ext, dict):
+                    texto = ext.get("text", "")
+                else:
+                    texto = str(ext)
+            # Otros tipos
+            elif mensaje_obj.get("text"):
+                texto = mensaje_obj["text"]
+        
+        # Si aún no hay texto buscar en otros campos
+        if not texto:
+            texto = evento.get("Text", "") or data.get("Body", "") or data.get("body", "")
+        
+        # Asegurar que sea string
+        if not isinstance(texto, str):
+            texto = str(texto)
+    
         print(f"📱 De {telefono}: {texto}")
 
         if not texto or not telefono:
@@ -107,15 +125,9 @@ def webhook():
 
         datos = parsear_mensaje(texto)
 
-        if not datos["valido"]:
-            enviar_mensaje(telefono,
-                f"{datos['error']}\n\n"
-                f"📋 *Formato correcto:*\n"
-                f"ID: 879209223\n"
-                f"100 diamantes\n"
-                f"pin: 98239-chbf87-2873h-2355"
-            )
-            return jsonify({"status": "formato invalido"}), 200
+        iif not datos["valido"]:
+            print(f"⏭️ Mensaje sin formato correcto, ignorando")
+            return jsonify({"status": "ignorado"}), 200
 
         hilo = threading.Thread(target=procesar_canje, args=(telefono, datos))
         hilo.start()
