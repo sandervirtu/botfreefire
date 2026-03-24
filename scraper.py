@@ -48,7 +48,7 @@ def ejecutar_bot(pin=None, user_id=None, diamantes_esperados=None):
     try:
         with sync_playwright() as p:
             print("🌐 Abriendo navegador...")
-            browser = p.chromium.launch(headless=False)
+            browser = p.chromium.launch(headless=True)
             page = browser.new_page()
 
             # ── PASO 1 ──────────────────────────────
