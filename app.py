@@ -125,7 +125,7 @@ def webhook():
 
         datos = parsear_mensaje(texto)
 
-        iif not datos["valido"]:
+        if not datos["valido"]:
             print(f"⏭️ Mensaje sin formato correcto, ignorando")
             return jsonify({"status": "ignorado"}), 200
 
