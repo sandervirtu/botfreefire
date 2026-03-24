@@ -53,12 +53,12 @@ def ejecutar_bot(pin=None, user_id=None, diamantes_esperados=None):
 
             # ── PASO 1 ──────────────────────────────
             print("📌 Paso 1: Abriendo redeem.hype.games...")
-            page.goto("https://redeem.hype.games/", wait_until="networkidle")
-            time.sleep(2)
+            page.goto("https://redeem.hype.games/", wait_until="domcontentloaded")
+            time.sleep(3)
 
             # ── PASO 2 ──────────────────────────────
             print("📌 Paso 2: Escribiendo PIN...")
-            page.wait_for_selector("#pininput", timeout=10000)
+            page.wait_for_selector("#pininput", timeout=30000)
             page.fill("#pininput", pin)
             time.sleep(1)
 
