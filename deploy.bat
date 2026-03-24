@@ -1,0 +1,2 @@
+cd C:\Users\ADMIN\bot-hype
+gcloud run deploy bot-hype --source . --region us-central1 --platform managed --allow-unauthenticated --set-env-vars CAPSOLVER_API_KEY=CAP-96332E07A26217212E0A4F1ECCC7C1C6953F67B38D67BFCE12383ED9D3D49262,WUZAPI_URL=https://evolutionapi-wuzapi-server.7hjfug.easypanel.host,WUZAPI_TOKEN=123456
