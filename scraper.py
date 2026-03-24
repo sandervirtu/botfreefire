@@ -48,8 +48,16 @@ def ejecutar_bot(pin=None, user_id=None, diamantes_esperados=None):
     try:
         with sync_playwright() as p:
             print("🌐 Abriendo navegador...")
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
+            browser = p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox"]
+    )
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            viewport={"width": 1280, "height": 720},
+            locale="es-ES"
+    )
+            page = context.new_page()
 
             # ── PASO 1 ──────────────────────────────
             print("📌 Paso 1: Abriendo redeem.hype.games...")
